@@ -1,4 +1,4 @@
 #!/bin/sh
 rm -rf mlx
 gcc -o mlx main.c -I. -I libft/include -L. -lmlx -L libft/ -lft -framework OpenGL -framework AppKit
-./mlx test_maps/100-6.fdf
+./mlx test_maps/test2.fdf
