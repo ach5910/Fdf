@@ -36,7 +36,8 @@ const unsigned char scl = 0x04;
 const unsigned char rot_x = 0x08;
 const unsigned char rot_y = 0x10;
 const unsigned char rot_z = 0x20;
-const unsigned char sign = 0x40;
+const unsigned char mous = 0x40;
+const unsigned char sign = 0x80;
 unsigned char flags = 0;
 
 typedef struct s_vec
@@ -62,6 +63,7 @@ void perspective(double dir);
 void scale(double factor);
 void translation_h(double shift);
 void translation_v(double shift);
+void draw_tri(void);
 
 int colors[24] = {0};
 
@@ -219,8 +221,9 @@ int my_key_recall(unsigned char keycode, void *mlx)
 int my_key_funct(int kc, void *mlx)
 {
 	printf("key event %d\n", kc);
-	if (kc == 0 || kc == 1 || kc == 2 || kc == 3 || kc == 6 || kc == 7 ||
-		kc == 24|| kc == 27 || (kc >= 123 && kc <= 126))
+	// if (kc == 0 || kc == 1 || kc == 2 || kc == 3 || kc == 6 || kc == 7 ||
+	// 	kc == 24|| kc == 27 || (kc >= 123 && kc <= 126))
+	if (flags && !(flags & mous))
 		flags = 0;
 	// if (keycode == 0)
 	// 	rotation_x(0.25);
@@ -666,62 +669,88 @@ void draw_lines_y(int index, int inc)
 	}
 }
 
-double amean_x()
-{
-	int i;
-	double sum;
+// double amean_x()
+// {
+// 	int i;
+// 	double sum;
 
-	sum = 0;
-	i = 0;
-	while (i < len * max_strs)
-	{
-		sum += up[i].x;
-		i++;
-	}
-	return (sum / (len * max_strs));
-}
+// 	sum = 0;
+// 	i = 0;
+// 	while (i < len * max_strs)
+// 	{
+// 		sum += up[i].x;
+// 		i++;
+// 	}
+// 	return (sum / (len * max_strs));
+// }
 
-double amean_y()
-{
-	int i;
-	double sum;
+// double amean_y()
+// {
+// 	int i;
+// 	double sum;
 
-	sum = 0;
-	i = 0;
-	while (i < len * max_strs)
-	{
-		sum += up[i].y;
-		i++;
-	}
-	return (sum / (len * max_strs));
-}
+// 	sum = 0;
+// 	i = 0;
+// 	while (i < len * max_strs)
+// 	{
+// 		sum += up[i].y;
+// 		i++;
+// 	}
+// 	return (sum / (len * max_strs));
+// }
 
-void rot_arrow(t_vec *arw, double dir, double x1, double y1)
-{
-	int i;
-	double tmp_x;
-	double c_x = amean_x();
-	double c_y = amean_y();
-	double d;
-	double x;
-	double y;
-	double theta;
+// void rot_arrow(t_vec *arw, double dir, double x1, double y1)
+// {
+// 	int i;
+// 	double tmp_x;
+// 	double c_x = amean_x();
+// 	double c_y = amean_y();
+// 	double d;
+// 	double x;
+// 	double y;
+// 	double theta;
 
-	i = 0;
-	while (i < 2500)
-	{
-		x = arw[i].x - c_x;
-		y = arw[i].y - c_y;
-		d = hypot(y, x);
-		theta = atan2(y, x) + dir;
-		arw[i].x = c_x + d * cos(theta);
-		arw[i].y = c_y + d * sin(theta);
-		mlx_pixel_put(mlx, win, arw[i].x + x1, arw[i].y + y1, arw[i].color);
+// 	i = 0;
+// 	while (i < 2500)
+// 	{
+// 		x = arw[i].x - c_x;
+// 		y = arw[i].y - c_y;
+// 		d = hypot(y, x);
+// 		theta = atan2(y, x) + dir;
+// 		arw[i].x = c_x + d * cos(theta);
+// 		arw[i].y = c_y + d * sin(theta);
+// 		mlx_pixel_put(mlx, win, arw[i].x + x1, arw[i].y + y1, arw[i].color);
 		
-		i++;
+// 		i++;
+// 	}
+// }
+
+void draw_tri(void)
+{
+	int i;
+	int j;
+	int c;
+
+	j  = 0;
+	while (j < 80)
+	{
+		i = 0;
+		while (i < 80)
+		{
+			c = 0x00FFFFFF;
+			if ( j - i >= -40 && j + i >= 40 && j <= 40)
+				mlx_pixel_put(mlx, win, i + 1050, j + 590, c);
+			if (j + i <= 80 && j >= i)
+				mlx_pixel_put(mlx, win, i + 1150, j + 650, c);
+			if (j + i <= 80 && j <= i)
+				mlx_pixel_put(mlx, win, i + 1050, j + 750, c);
+			if (j + i >= 40 && j - i <= 40 && i <= 40)
+				mlx_pixel_put(mlx, win, i + 990, j + 650, c);
+			i++;
+		}
+		j++;
 	}
 }
-
 // void put_arrow(t_vec *arw, double x, double y)
 // {
 // 	double i;
@@ -746,27 +775,31 @@ void rot_arrow(t_vec *arw, double dir, double x1, double y1)
 // }
 void draw_legend(void)
 {
-	int y = 30;
+	draw_tri();
 	mlx_string_put(mlx, win, 30, 25, 16777215, "***TRANSFORMATION COMMANDS***");
-	mlx_string_put(mlx, win, 30, 45, 16777215, "Scale : '-' '+' (Keypad)");
-	mlx_string_put(mlx, win, 30, 60, 16777215, "Rotation :");
-	mlx_string_put(mlx, win, 30, 75, 16777215, "       x : 'd' 'f'");
-	mlx_string_put(mlx, win, 30, 90, 16777215, "       y : 'a' 's'");
-	mlx_string_put(mlx, win, 30, 105, 16777215, "       z : 'z' 'x'");
-	mlx_string_put(mlx, win, 30, 120, 16777215, "Translation : 'Arrows'");
-	mlx_string_put(mlx, win, 30, 135, 16777215, "Depth : '*' '/' '-' (Numpad)");
-	mlx_string_put(mlx, win, 30, 150, 16777215, "Reset : 'r'");
-	mlx_string_put(mlx, win, 30, 165, 16777215, "Exit : 'ESC'");
-}
+	mlx_string_put(mlx, win, 30, 50, 16777215, "Exit  		: 'ESC'");
+	mlx_string_put(mlx, win, 30, 70, 16777215, "Reset 		: 'r'");
+	mlx_string_put(mlx, win, 30, 90, 16777215, "Scale 		: '-'  '+' (Keypad)");
+	mlx_string_put(mlx, win, 30, 110, 16777215, "Depth 		: '*'  '/'  '-' (Numpad)");
+	mlx_string_put(mlx, win, 30, 130, 16777215,"Translation : 'Arrows'");
+	mlx_string_put(mlx, win, 30, 150, 16777215,"Rotation 	:");
+	mlx_string_put(mlx, win, 30, 170, 16777215,"     x - 'd'  'f'");
+	mlx_string_put(mlx, win, 30, 190, 16777215,"     y - 'a'  's'");
+	mlx_string_put(mlx, win, 30, 210, 16777215,"     z - 'z'  'x'");
+	
+	
 
-void draw_arrows(void)
-{
-	rot_arrow(up, 0, 1065, 585);
-	rot_arrow(up, M_PI / 2, 1135, 650);
-	rot_arrow(up, M_PI / 2, 1065, 715);
-	rot_arrow(up, M_PI / 2, 995, 650);
 	
 }
+
+// void draw_arrows(void)
+// {
+// 	rot_arrow(up, 0, 1065, 585);
+// 	rot_arrow(up, M_PI / 2, 1135, 650);
+// 	rot_arrow(up, M_PI / 2, 1065, 715);
+// 	rot_arrow(up, M_PI / 2, 995, 650);
+	
+// }
 
 void	draw_map(void)
 {
@@ -796,97 +829,97 @@ void	draw_map(void)
 
 }
 
-t_vec	*copy_arrow()
-{
-	t_vec *temp;
-	int i;
-	int j;
-	int p;
+// t_vec	*copy_arrow()
+// {
+// 	t_vec *temp;
+// 	int i;
+// 	int j;
+// 	int p;
 
-	up = (t_vec*)malloc(sizeof(t_vec) * (1250));
-	j = 0;
-	p = 0;
-	while (j < 25)
-	{
-		i = 0;
-		while (i < 50)
-		{
-			temp[p].x = up[p].x;
-			temp[p].y = up[p].y;
-			temp[p].z = up[p].z;
-			temp[p].color = up[p].color;
-			p++;
-			i++;
-		}
-		j++;
-	}
-	return (temp);
-}
+// 	up = (t_vec*)malloc(sizeof(t_vec) * (1250));
+// 	j = 0;
+// 	p = 0;
+// 	while (j < 25)
+// 	{
+// 		i = 0;
+// 		while (i < 50)
+// 		{
+// 			temp[p].x = up[p].x;
+// 			temp[p].y = up[p].y;
+// 			temp[p].z = up[p].z;
+// 			temp[p].color = up[p].color;
+// 			p++;
+// 			i++;
+// 		}
+// 		j++;
+// 	}
+// 	return (temp);
+// }
 
 
 
-void get_arrows(void)
-{
-	int fd;
-	char *str;
-	char **plot;
-	char *num;
-	int i;
-	int j;
-	int p;
+// void get_arrows(void)
+// {
+// 	int fd;
+// 	char *str;
+// 	char **plot;
+// 	char *num;
+// 	int i;
+// 	int j;
+// 	int p;
 
-	p = 0;
-	ft_printf("In get Arrow\n");
-	up = (t_vec*)malloc(sizeof(t_vec) * (1250));
-	str = ft_strnew(2550);
-	fd = open(arw_file, O_RDONLY);
-	read(fd, str, 2550);
-	close(fd);
-	plot = ft_strsplit(str, '\n');
-	ft_strdel(&str);
-	j = 0;
-	while (j < 25)
-	{
-		i = 0;
-		while (i < 50)
-		{
-			plot[j] = ft_strtrim(plot[j]);
-			if ((num  = ft_strchr(plot[j], ' ')) != NULL)
-			{
-				//num  = ft_strchr(map[j], ' ');
-				if (num[1] == ' ')
-					num++;
-				num[0] = '\0';
-				up[p].z = ft_atoi(plot[j]);
-				free(plot[j]);
-				plot[j] = ft_strdup(num + 1);
-				up[p].color = up[p].z == 0 ? 0x000000 : 0x00FFFFFF;
-				up[p].x = i;
-				up[p].y = j;
-			}
-			else
-			{
-				up[p].z = ft_atoi(plot[j]);
-				up[p].color = up[p].z == 0 ? 0x000000 : 0x00FFFFFF;
-				up[p].x = i;
-				up[p].y = j;
+// 	p = 0;
+// 	ft_printf("In get Arrow\n");
+// 	up = (t_vec*)malloc(sizeof(t_vec) * (1250));
+// 	str = ft_strnew(2550);
+// 	fd = open(arw_file, O_RDONLY);
+// 	read(fd, str, 2550);
+// 	close(fd);
+// 	plot = ft_strsplit(str, '\n');
+// 	ft_strdel(&str);
+// 	j = 0;
+// 	while (j < 25)
+// 	{
+// 		i = 0;
+// 		while (i < 50)
+// 		{
+// 			plot[j] = ft_strtrim(plot[j]);
+// 			if ((num  = ft_strchr(plot[j], ' ')) != NULL)
+// 			{
+// 				//num  = ft_strchr(map[j], ' ');
+// 				if (num[1] == ' ')
+// 					num++;
+// 				num[0] = '\0';
+// 				up[p].z = ft_atoi(plot[j]);
+// 				free(plot[j]);
+// 				plot[j] = ft_strdup(num + 1);
+// 				up[p].color = up[p].z == 0 ? 0x000000 : 0x00FFFFFF;
+// 				up[p].x = i;
+// 				up[p].y = j;
+// 			}
+// 			else
+// 			{
+// 				up[p].z = ft_atoi(plot[j]);
+// 				up[p].color = up[p].z == 0 ? 0x000000 : 0x00FFFFFF;
+// 				up[p].x = i;
+// 				up[p].y = j;
 
-			}
-			printf("map[%d] = %s\t",j, plot[j]);
-			printf("X = %0.5f Y = %0.5f Z = %0.5f C = %d\t", up[p].x, up[p].y, up[p].z, up[p].color);
-			p++;
-			i++;
-		}
-		j++;
-	}
-	// down = copy_arrow();
-	// left = copy_arrow();
-	// right = copy_arrow();
-	// rot_arrow(down, 1);
-	// rot_arrow(left, 0.5);
-	// rot_arrow(right, -0.5);
+// 			}
+// 			printf("map[%d] = %s\t",j, plot[j]);
+// 			printf("X = %0.5f Y = %0.5f Z = %0.5f C = %d\t", up[p].x, up[p].y, up[p].z, up[p].color);
+// 			p++;
+// 			i++;
+// 		}
+// 		j++;
+// 	}
+// 	// down = copy_arrow();
+// 	// left = copy_arrow();
+// 	// right = copy_arrow();
+// 	// rot_arrow(down, 1);
+// 	// rot_arrow(left, 0.5);
+// 	// rot_arrow(right, -0.5);
 
-}
+// }
 
 void get_map(void)
 {
@@ -930,16 +963,16 @@ void get_map(void)
 	//map[max_strs] = NULL;
 	map = ft_strsplit(temp, ',');
 	len = ft_strlen(temp)/ max_strs + 1;
-	j = 0;
+	// j = 0;
 	// map = ft_strsplit(temp, '\n');
-	while (j < max_strs)
-	{
-		// map[j] = ft_strnew(len);
-		// map[j] = ft_strncpy(map[j], temp, len);
-		ft_printf("map[%d] = {%s}\n", j, map[j]);
-		// temp += len;
-		j++;
-	}
+	// while (j < max_strs)
+	// {
+	// 	// map[j] = ft_strnew(len);
+	// 	// map[j] = ft_strncpy(map[j], temp, len);
+	// 	ft_printf("map[%d] = {%s}\n", j, map[j]);
+	// 	// temp += len;
+	// 	j++;
+	// }
 	j = 0;
 	while (tmp[j] != NULL)
 		j++;
@@ -968,7 +1001,6 @@ void get_map(void)
 					num++;
 				num[0] = '\0';
 				col = ft_atoi(map[j]);
-				free(map[j]);
 				map[j] = ft_strdup(num + 1);
 				// ft_printf("Setting Point\n");
 				// points[p] = col;
@@ -978,7 +1010,7 @@ void get_map(void)
 				pnts[p].color =  colors[abs(col) % 24]; //colors[abs((24 + col) % 24)];
 				//((255 % abs(col))<< 16) | ((255 % abs(col))<< 8) | (255 % abs(col));//colors[abs(col)];
 				
-				// ft_printf("Done Setting Point\n");
+				printf("Points: x = %f y = %f z = %f color = %d\n",pnts[p].x, pnts[p].y, pnts[p].z, pnts[p].color);
 				// ft_printf(" %d ", *points);
 				p++;
 				// points[j / w][i / w] = col;
@@ -1142,10 +1174,23 @@ int my_loop_hook(void *mlx)
 	
 	return (0);
 }
-
-int my_mouse_function(int button, int x, int y, void *mlx)
+int my_mouse_released(int button, int i, int j, void *mlx)
 {
-	ft_printf("Button = %d  X = %d  Y  = %d\n", button, x, y);
+	if (flags & mous)
+		flags = 0;
+	return (0);
+}
+int my_mouse_function(int button, int i, int j, void *mlx)
+{
+	ft_printf("Button = %d  X = %d  Y  = %d\n", button, i, j);
+	if ( (j - 590) - (i - 1050) >= -40 && (j - 590) + (i - 1050) >= 40 && (j - 590) <= 40)
+		flags |= rot_x | mous;
+	else if ((j - 650) + (i - 1150) <= 80 && (j - 650) >= (i - 1150) && (i - 1150 >= 0))
+		flags |= rot_y | sign | mous;
+	else if ((j - 750) + (i - 1050) <= 80 && (j - 750) <= (i - 1050) && (j - 750) >= 0)
+		flags |= rot_x | sign | mous;
+	else if ((j - 650) + (i - 990) >= 40 && (j - 650) - (i - 990) <= 40 && (i - 990) <= 40)
+		flags |= rot_y | mous;;
 	return (0);
 }
 
@@ -1186,6 +1231,7 @@ int main(int argc, char **argv)
 	// mlx_key_pressed_hook(win, my_key_pressed, mlx);
 	mlx_key_hook(win, my_key_funct, mlx);
 	mlx_hook(win, 2, 0, my_key_pressed, mlx);
+	mlx_hook(win, 5, 0, my_mouse_released, mlx);
 	mlx_mouse_hook(win, my_mouse_function, mlx);
 	mlx_loop_hook(mlx, my_loop_hook, win);
 	mlx_loop(mlx);
