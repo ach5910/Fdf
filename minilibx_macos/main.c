@@ -34,6 +34,8 @@ double c_max;
 char *arw_file;
 unsigned char *keys;
 double per = 1;
+//int col_iter = 0;
+
 const unsigned char tran_h = 0x01;
 const unsigned char tran_v = 0x02;
 const unsigned char scl = 0x04;
@@ -52,19 +54,21 @@ typedef struct s_vec
 	int color;
 }				t_vec;
 t_vec *pnts;
+t_vec *c_pnts;
 
 void get_map(void);
 void draw_map(void);
-void rotation_x(double dir);
-void rotation_y(double dir);
-void rotation_z(double dir);
+void rotation_x(double dir, int is_recall);
+void rotation_y(double dir, int is_recall);
+void rotation_z(double dir, int is_recall);
 void clear(void);
 void perspective(double dir);
-void scale(double factor);
-void translation_h(double shift);
-void translation_v(double shift);
+void scale(double factor, int is_recall);
+void translation_h(double shift, int is_recall);
+void translation_v(double shift, int is_recall);
 void draw_tri(void);
 void set_color_map(int get_next_map);
+void reset_map(void);
 
 int colors[24] = {0};
 
@@ -91,6 +95,8 @@ void init_colors()
 	colors[22] = 0x8b008b;
 	colors[23] = 0xee82ee;
 }
+
+char *theme_names[7] = {"Dawn","Dusk","Kryptonite","Red Blue","Fire","Ice","Seashore"};
 
 int dawn[64] = {
 	0xffffc3, 0xffffbe, 0xffffba, 0xffffb6, 
@@ -219,6 +225,8 @@ int seashore[64] =
 	0x5d7f,   0x557e,   0x4e7e,   0x467e,
 	0x3e7e,   0x367e,   0x2e7e,   0x267e, 
 	0x1e7e,   0x167e,   0xe7e,    0x67e};
+
+//int **color_theme = {&dawn, &dusk, &kryptonite, &red_blue, &fire, &ice, &seashore};
 // "darkred" , 0x8b0000
 // "red" , 0xff0000
 // "hotpink" , 0xff69b4
@@ -256,32 +264,32 @@ int my_key_recall(unsigned char keycode, void *mlx)
 	if (keycode & sign)
 	{
 		if (keycode & rot_x)
-			rotation_x(-0.125);
+			rotation_x(-0.125, 1);
 		else if (keycode & rot_y)
-			rotation_y(-0.125);
+			rotation_y(-0.125, 1);
 		else if (keycode & rot_z)
-			rotation_z(-0.125);
+			rotation_z(-0.125, 1);
 		else if (keycode & scl)
-			scale(0.8);
+			scale(0.8, 1);
 		else if (keycode & tran_h)
-			translation_h(-10.0);
+			translation_h(-10.0, 1);
 		else if (keycode & tran_v)
-			translation_v(-10.0);
+			translation_v(-10.0, 1);
 	}
 	else
 	{
 		if (keycode & rot_x)
-			rotation_x(0.125);
+			rotation_x(0.125, 1);
 		else if (keycode & rot_y)
-			rotation_y(0.125);
+			rotation_y(0.125, 1);
 		else if (keycode & rot_z)
-			rotation_z(0.125);
+			rotation_z(0.125, 1);
 		else if (keycode & scl)
-			scale(1.25);
+			scale(1.25, 1);
 		else if (keycode & tran_h)
-			translation_h(10.0);
+			translation_h(10.0, 1);
 		else if (keycode & tran_v)
-			translation_v(10.0);
+			translation_v(10.0, 1);
 	}
 	return (0);
 }
@@ -300,19 +308,24 @@ int my_key_funct(int kc, void *mlx)
 		exit(1);
 	else if (kc == 15)
 	{
-		ft_bzero((void *)keys, 100);
+		ft_bzero((void *)keys, 1024);
 		key_len = 0;
-		get_map();
+		reset_map();
 		mlx_clear_window(mlx, win);
 		set_color_map(0);
 	}
 	return (0);
 }
 
-void translation_h(double shift)
+void translation_h(double shift, int is_recall)
 {
 	int i;
 
+	if (!is_recall)
+	{
+		keys[key_len] = flags;
+		key_len++;
+	}
 	i = 0;
 	while (i < len * max_strs)
 	{
@@ -321,10 +334,15 @@ void translation_h(double shift)
 	}
 }
 
-void translation_v(double shift)
+void translation_v(double shift, int is_recall)
 {
 	int i;
 
+	if (!is_recall)
+	{
+		keys[key_len] = flags;
+		key_len++;
+	}
 	i = 0;
 	while (i < len * max_strs)
 	{
@@ -333,10 +351,15 @@ void translation_v(double shift)
 	}
 }
 
-void scale(double factor)
+void scale(double factor, int is_recall)
 {
 	int i;
 
+	if (!is_recall)
+	{
+		keys[key_len] = flags ;
+		key_len++;
+	}
 	i = 0;
 	double center_x = WIDTH / 2;
 	double center_y = HEIGHT / 2;
@@ -355,7 +378,7 @@ void	perspective(double dir)
 
 	per *= dir;
 	mlx_clear_window(mlx, win);
-	get_map();
+	reset_map();
 	i = 0;
 	while (i < len * max_strs)
 	{
@@ -365,13 +388,14 @@ void	perspective(double dir)
 		// pnts[i].y = 0.5 * pnts[i].y / temp_z;
 		i++;
 	}
-
+	
 	i = 0;
 	while (i < key_len)
 	{
 		my_key_recall((int)keys[i], mlx);
 		i++;
 	}
+
 	set_color_map(0);	
 }
 
@@ -420,7 +444,7 @@ double mean_z()
 	return (sum / (len * max_strs));
 }
 
-void	rotation_y(double dir)
+void	rotation_y(double dir, int is_recall)
 {
 
 	int i;
@@ -431,6 +455,12 @@ void	rotation_y(double dir)
 	double x;
 	double z;
 	double theta;
+
+	if (!is_recall)
+	{
+		keys[key_len] = flags;
+		key_len++;
+	}
 
 	i = 0;
 	while (i < len * max_strs)
@@ -461,7 +491,7 @@ void	rotation_y(double dir)
 	// draw_map();
 }
 
-void	rotation_z(double dir)
+void	rotation_z(double dir, int is_recall)
 {
 	int i;
 	double tmp_x;
@@ -471,6 +501,12 @@ void	rotation_z(double dir)
 	double x;
 	double y;
 	double theta;
+
+	if (!is_recall)
+	{
+		keys[key_len] = flags;
+		key_len++;
+	}
 
 	i = 0;
 	while (i < len * max_strs)
@@ -500,7 +536,7 @@ void	rotation_z(double dir)
 	// draw_map();
 }
 
-void	rotation_x(double dir)
+void	rotation_x(double dir, int is_recall)
 {
 	int i;
 	double tmp_y;
@@ -510,6 +546,12 @@ void	rotation_x(double dir)
 	double z;
 	double y;
 	double theta;
+
+	if (!is_recall)
+	{
+		keys[key_len] = flags;
+		key_len++;
+	}
 
 	i = 0;
 	while (i < len * max_strs)
@@ -649,6 +691,7 @@ void draw_tri(void)
 void draw_legend(void)
 {
 	int white;
+	//char *color_theme;
 
 	draw_tri();
 	mlx_string_put(mlx, win, 30, 25, 16777215 , "***TRANSFORMATION COMMANDS***");
@@ -661,6 +704,10 @@ void draw_legend(void)
 	mlx_string_put(mlx, win, 30, 170, 16777215 ,"     x - 'd'  'f'");
 	mlx_string_put(mlx, win, 30, 190, 16777215 ,"     y - 'a'  's'");
 	mlx_string_put(mlx, win, 30, 210, 16777215 ,"     z - 'z'  'x'");
+
+	//color_theme = ft_strjoin("Color Theme : ", theme_names[col_iter % 7]);
+	//mlx_string_put(mlx, win, WIDTH - 200, 25, 16777215, color_theme);
+	// ft_printf("Color Theme: %s", theme_names[col_iter % 7]);
 
 	// mlx_string_put(mlx, win, 30, 25, 16777215 - iter * (7667711) + (iter / 2) * (7667711), "***TRANSFORMATION COMMANDS***");
 	// mlx_string_put(mlx, win, 30, 50, 16777215 - (iter / 2) * (7667711) + (iter / 3) * (7667711), "Exit  		: 'ESC'");
@@ -681,8 +728,8 @@ void apply_color_map(int *color_map)
 	i = 0;
 	while (i < len * max_strs)
 	{
-		pnts[i].color = color_map[(int)(((pnts[i].z - c_min)/ (c_max - c_min)) * 64)];
-		printf("Color Ratio = %f\n", ((pnts[i].z - c_min)/ (c_max - c_min)));
+		pnts[i].color = color_map[(int)(((c_max - c_pnts[i].z)/ (c_max - c_min)) * 63)];
+		printf("Color Ratio = %f\n", ((c_pnts[i].z - c_min)/ (c_max - c_min)));
 		i++;
 	}
 }
@@ -734,6 +781,37 @@ void	draw_map(void)
 	}
 	draw_legend();
 
+}
+
+void set_copy(void)
+{
+	int i;
+
+	i = 0;
+	while (i < len * max_strs)
+	{
+		c_pnts[i].x = pnts[i].x;
+		c_pnts[i].y = pnts[i].y;
+		c_pnts[i].z = pnts[i].z;
+		i++;
+	}
+}
+
+void reset_map(void)
+{
+	int i;
+
+	i = 0;
+	while (i < len * max_strs)
+	{
+		pnts[i].x = c_pnts[i].x;
+		pnts[i].y = c_pnts[i].y;
+		pnts[i].z = c_pnts[i].z;
+		i++;
+	}
+	translation_h((WIDTH / 2) - (len / 2), 0);
+	translation_v((HEIGHT / 2) - (max_strs / 2), 0);
+	scale((WIDTH * 3)/ (len * 5), 0);	
 }
 
 void get_map(void)
@@ -821,9 +899,11 @@ void get_map(void)
 		}
 		j++;
 	}
-	translation_h((WIDTH / 2) - (len / 2));
-	translation_v((HEIGHT / 2) - (max_strs / 2));
-	scale((WIDTH * 3)/ (len * 5));
+	c_pnts = (t_vec*)malloc(sizeof(t_vec) * len * max_strs);
+	set_copy();
+	translation_h((WIDTH / 2) - (len / 2), 0);
+	translation_v((HEIGHT / 2) - (max_strs / 2), 0);
+	scale((WIDTH * 3)/ (len * 5), 0);
 }
 
 int my_key_pressed(int keycode, void *mlx)
@@ -860,57 +940,67 @@ int my_loop_hook(void *mlx)
 	if (flags & rot_x)
 	{
 		if (flags & sign)
-			rotation_x(-0.125);
+			rotation_x(-0.125, 0);
 		else
-			rotation_x(0.125);
+			rotation_x(0.125, 0);
 	}
 	if (flags & rot_y)
 	{
 		if (flags & sign)
-			rotation_y(-0.125);
+			rotation_y(-0.125, 0);
 		else
-			rotation_y(0.125);
+			rotation_y(0.125, 0);
 	}
 	if (flags & rot_z)
 	{
 		if (flags & sign)
-			rotation_z(-0.125);
+			rotation_z(-0.125, 0);
 		else
-			rotation_z(0.125);
+			rotation_z(0.125, 0);
 	}
 	if (flags & tran_v)
 	{
 		if (flags & sign)
-			translation_v(-10.0);
+			translation_v(-10.0, 0);
 		else
-			translation_v(10.0);
+			translation_v(10.0, 0);
 	}
 	if (flags & tran_h)
 	{
 		if (flags & sign)
-			translation_h(-10.0);
+			translation_h(-10.0, 0);
 		else
-			translation_h(10);
+			translation_h(10, 0);
 	}
 	if (flags & scl)
 	{
 		if (flags & sign)
-			scale(0.8);
+			scale(0.8, 0);
 		else
-			scale(1.25);
+			scale(1.25, 0);
 	}
 	if (flags)
 	{
-		keys[key_len] = flags;
-		key_len++;
 		mlx_clear_window(mlx, win);
 		draw_map();
 	}
 	
 	return (0);
 }
+
+int my_mouse_motion(int i , int j , void *mlx)
+{
+	//ft_printf("Motion Button = %d X = %d Y = %d\n", button, i, j);
+	if (flags & mous && !((j - 590) - (i - 1050) >= -40 
+		&& (j - 590) + (i - 1050) >= 40 && 
+		(j - 750) + (i - 1050) <= 80 && (j - 750) <= (i - 1050)))
+		flags = 0;
+	return (0);
+}
+
 int my_mouse_released(int button, int i, int j, void *mlx)
 {
+	ft_printf("Release Button = %d  X = %d  Y  = %d\n", button, i, j);	
 	if (flags & mous)
 		flags = 0;
 	return (0);
@@ -964,6 +1054,7 @@ int main(int argc, char **argv)
 	mlx_key_hook(win, my_key_funct, mlx);
 	mlx_hook(win, 2, 0, my_key_pressed, mlx);
 	mlx_hook(win, 5, 0, my_mouse_released, mlx);
+	mlx_hook(win, 6, 0, my_mouse_motion, mlx);
 	mlx_mouse_hook(win, my_mouse_function, mlx);
 	mlx_loop_hook(mlx, my_loop_hook, win);
 	mlx_loop(mlx);
