@@ -16,7 +16,7 @@ int main(int argc, char **argv)
 	while (get_next_line(fd, &str))
 	{
 		c = 0;
-		if (i % 4 == 0)
+		if (i >= 64 && i < 192 && i % 2 == 0)
 		{
 			tmp = ft_strchr(str, ' ');
 			tmp[0] = '\0';	

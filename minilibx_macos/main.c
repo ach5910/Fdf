@@ -29,22 +29,27 @@ int pad = 150;
 int key_len = 0;
 int iter = 0;
 char *file;
+char **files;
+int max_files = 0;
+int file_num = 0;
 double c_min;
 double c_max;
 char *arw_file;
-unsigned char *keys;
+unsigned int *keys;
 double per = 1;
 //int col_iter = 0;
 
-const unsigned char tran_h = 0x01;
-const unsigned char tran_v = 0x02;
-const unsigned char scl = 0x04;
-const unsigned char rot_x = 0x08;
-const unsigned char rot_y = 0x10;
-const unsigned char rot_z = 0x20;
-const unsigned char mous = 0x40;
-const unsigned char sign = 0x80;
-unsigned char flags = 0;
+const unsigned int tran_h = 0x01;
+const unsigned int tran_v = 0x02;
+const unsigned int scl = 0x04;
+const unsigned int rot_x = 0x08;
+const unsigned int rot_y = 0x10;
+const unsigned int rot_z = 0x20;
+const unsigned int mous = 0x40;
+const unsigned int sign = 0x80;
+const unsigned int rot_x_neg = 0x100;
+const unsigned int rot_y_neg = 0x200;
+unsigned int flags = 0;
 
 typedef struct s_vec
 {
@@ -56,16 +61,16 @@ typedef struct s_vec
 t_vec *pnts;
 t_vec *c_pnts;
 
-void get_map(void);
+void get_map(char *file_name);
 void draw_map(void);
-void rotation_x(double dir, int is_recall);
-void rotation_y(double dir, int is_recall);
-void rotation_z(double dir, int is_recall);
+void rotation_x(double dir);
+void rotation_y(double dir);
+void rotation_z(double dir);
 void clear(void);
 void perspective(double dir);
-void scale(double factor, int is_recall);
-void translation_h(double shift, int is_recall);
-void translation_v(double shift, int is_recall);
+void scale(double factor);
+void translation_h(double shift);
+void translation_v(double shift);
 void draw_tri(void);
 void set_color_map(int get_next_map);
 void reset_map(void);
@@ -100,7 +105,7 @@ char *theme_names[7] = {"Dawn","Dusk","Kryptonite","Red Blue","Fire","Ice","Seas
 
 int dawn[64] = {
 	0xffffc3, 0xffffbe, 0xffffba, 0xffffb6, 
-	0xffffb1, 0xffffad, 0xffffa9, 0xffffa4, 
+	0xffffb1, 0xffffad, 0xffffa9, 0xffffa4,
 	0xffffa0, 0xffff9b, 0xffff97, 0xffff93, 
 	0xffff8e, 0xffff8a, 0xffff86, 0xffff81, 
 	0xffff7d, 0xfff77d, 0xffee7d, 0xffe77d, 
@@ -115,6 +120,24 @@ int dawn[64] = {
 	0x5d007f, 0x55007e, 0x4e007e, 0x46007e, 
 	0x3e007e, 0x36007e, 0x2e007e, 0x26007e, 
 	0x1e007e, 0x16007e, 0xe007e,  0x6007e};
+
+int dawn_center[64] = {
+	0xffff7d, 0xfffb7d, 0xfff77d, 0xfff27d, 
+	0xffee7d, 0xffeb7d, 0xffe77d, 0xffe37e, 
+	0xffdf7e, 0xffdb7e, 0xffd77e, 0xffd37e, 
+	0xffcf7e, 0xffcb7e, 0xffc77e, 0xffc37e, 
+	0xffbf7e, 0xffbb7e, 0xffb77e, 0xffb37e, 
+	0xffaf7e, 0xffab7e, 0xffa77e, 0xffa37e, 
+	0xff9f7e, 0xff9b7e, 0xff977e, 0xff937e, 
+	0xff8f7f, 0xff8a7f, 0xff867f, 0xff837f, 
+	0xfe7e7f, 0xfa7a7f, 0xf6767f, 0xf2737f, 
+	0xee6f7f, 0xea6b7f, 0xe6667f, 0xe2627f, 
+	0xde5e7f, 0xda5b7f, 0xd6577f, 0xd2537f, 
+	0xce4f7f, 0xca4b7f, 0xc6467f, 0xc2427f, 
+	0xbe3f7f, 0xba3b7f, 0xb6367f, 0xb2337f, 
+	0xae2f7f, 0xa92a7f, 0xa5277f, 0xa1227f, 
+	0x9d1f7f, 0x991b7f, 0x95167f, 0x91127f, 
+	0x8d0e7f, 0x890b7f, 0x85067f, 0x81027f};
 
 int dusk[64] = {
 	0xffffff, 0xfff7ff, 0xffefff, 0xffe7ff, 
@@ -151,6 +174,24 @@ int kryptonite[64] = {
 	0x6000,   0x5800,   0x4f00,   0x4700, 
 	0x3f00,   0x3700,   0x2f00,   0x2700, 
 	0x1f00,   0x1600,   0xe00,    0x600};
+
+int kryptonite_center[64] = {
+	0xffff80, 0xfbff7c, 0xf7ff78, 0xf2ff74, 
+	0xeeff70, 0xebff6c, 0xe7ff68, 0xe3ff64, 
+	0xdfff60, 0xdbff5c, 0xd7ff58, 0xd3ff54, 
+	0xcfff4f, 0xcbff4b, 0xc7ff47, 0xc3ff43, 
+	0xbfff3f, 0xbbff3b, 0xb7ff37, 0xb3ff33, 
+	0xafff2f, 0xabff2b, 0xa7ff27, 0xa3ff23, 
+	0x9fff1f, 0x9bff1b, 0x97ff17, 0x93ff13, 
+	0x8fff0f, 0x8aff0b, 0x86ff07, 0x83ff03, 
+	0x7efe00, 0x7afa00, 0x76f600, 0x73f200, 
+	0x6fee00, 0x6bea00, 0x66e600, 0x62e300, 
+	0x5edf00, 0x5bdb00, 0x57d700, 0x53d300, 
+	0x4fcf00, 0x4bcb00, 0x46c700, 0x42c300, 
+	0x3fbf00, 0x3bbb00, 0x36b700, 0x33b300, 
+	0x2faf00, 0x2aac00, 0x27a800, 0x22a400, 
+	0x1fa000, 0x1b9c00, 0x169800, 0x129400, 
+	0xe9000,  0xb8c00,  0x68800,  0x28400,};
 
 int red_blue[64] = {
 	0x5f0000, 0x650000, 0x6b0000, 0x720000, 
@@ -189,6 +230,24 @@ int fire[64] =
 	0x3f0000, 0x370000, 0x2f0000, 0x270000, 
 	0x1f0000, 0x160000, 0xe0000,  0x60000};
 
+int fire_center[64] = {
+	0xffff80, 0xfffb7c, 0xfff778, 0xfff274, 
+	0xffee70, 0xffeb6c, 0xffe768, 0xffe364, 
+	0xffdf60, 0xffdb5c, 0xffd758, 0xffd354, 
+	0xffcf4f, 0xffcb4b, 0xffc747, 0xffc343, 
+	0xffbf3f, 0xffbb3b, 0xffb737, 0xffb333, 
+	0xffaf2f, 0xffab2b, 0xffa727, 0xffa323, 
+	0xff9f1f, 0xff9b1b, 0xff9717, 0xff9313, 
+	0xff8f0f, 0xff8a0b, 0xff8607, 0xff8303, 
+	0xfe7e00, 0xfa7a00, 0xf67600, 0xf27300, 
+	0xee6f00, 0xea6b00, 0xe66600, 0xe36200, 
+	0xdf5e00, 0xdb5b00, 0xd75700, 0xd35300, 
+	0xcf4f00, 0xcb4b00, 0xc74600, 0xc34200, 
+	0xbf3f00, 0xbb3b00, 0xb73600, 0xb33300, 
+	0xaf2f00, 0xac2a00, 0xa82700, 0xa42200, 
+	0xa01f00, 0x9c1b00, 0x981600, 0x941200, 
+	0x900e00, 0x8c0b00, 0x880600, 0x840200};
+
 int ice[64] = {
 	0xffffff, 0xf7ffff, 0xefffff, 0xe7ffff,
 	0xdfffff, 0xd7ffff, 0xcfffff, 0xc7ffff, 
@@ -226,6 +285,24 @@ int seashore[64] =
 	0x3e7e,   0x367e,   0x2e7e,   0x267e, 
 	0x1e7e,   0x167e,   0xe7e,    0x67e};
 
+int seashore_center[64] = {
+	0xffff7d, 0xfbff7d, 0xf7ff7d, 0xf2ff7d, 
+	0xeeff7d, 0xebff7d, 0xe7ff7d, 0xe3ff7e, 
+	0xdfff7e, 0xdbff7e, 0xd7ff7e, 0xd3ff7e, 
+	0xcfff7e, 0xcbff7e, 0xc7ff7e, 0xc3ff7e, 
+	0xbfff7e, 0xbbff7e, 0xb7ff7e, 0xb3ff7e, 
+	0xafff7e, 0xabff7e, 0xa7ff7e, 0xa3ff7e, 
+	0x9fff7e, 0x9bff7e, 0x97ff7e, 0x93ff7e, 
+	0x8fff7f, 0x8aff7f, 0x86ff7f, 0x83ff7f, 
+	0x7efe7f, 0x7afa7f, 0x76f67f, 0x73f27f, 
+	0x6fee7f, 0x6bea7f, 0x66e67f, 0x62e27f, 
+	0x5ede7f, 0x5bda7f, 0x57d67f, 0x53d27f, 
+	0x4fce7f, 0x4bca7f, 0x46c67f, 0x42c27f, 
+	0x3fbe7f, 0x3bba7f, 0x36b67f, 0x33b27f, 
+	0x2fae7f, 0x2aa97f, 0x27a57f, 0x22a17f, 
+	0x1f9d7f, 0x1b997f, 0x16957f, 0x12917f, 
+	0xe8d7f,  0xb897f,  0x6857f,  0x2817f};
+
 //int **color_theme = {&dawn, &dusk, &kryptonite, &red_blue, &fire, &ice, &seashore};
 // "darkred" , 0x8b0000
 // "red" , 0xff0000
@@ -258,38 +335,39 @@ int seashore[64] =
 // "tan" , 0xd2b48c
 // "chocolate" , 0xd2691e
 
-int my_key_recall(unsigned char keycode, void *mlx)
+int my_key_recall(unsigned int keycode, void *mlx)
 {
 	printf("key event %d\n", keycode);
+	
+	if (keycode & rot_x_neg)
+		rotation_x(-0.125);
+	if (keycode & rot_y_neg)
+		rotation_y(-0.125);
+	if (keycode & rot_x)
+		rotation_x(0.125);
+	if (keycode & rot_y)
+		rotation_y(0.125);
 	if (keycode & sign)
 	{
-		if (keycode & rot_x)
-			rotation_x(-0.125, 1);
-		else if (keycode & rot_y)
-			rotation_y(-0.125, 1);
-		else if (keycode & rot_z)
-			rotation_z(-0.125, 1);
+		if (keycode & rot_z)
+			rotation_z(-0.125);
 		else if (keycode & scl)
-			scale(0.8, 1);
+			scale(0.8);
 		else if (keycode & tran_h)
-			translation_h(-10.0, 1);
+			translation_h(-10.0);
 		else if (keycode & tran_v)
-			translation_v(-10.0, 1);
+			translation_v(-10.0);
 	}
 	else
 	{
-		if (keycode & rot_x)
-			rotation_x(0.125, 1);
-		else if (keycode & rot_y)
-			rotation_y(0.125, 1);
-		else if (keycode & rot_z)
-			rotation_z(0.125, 1);
+		if (keycode & rot_z)
+			rotation_z(0.125);
 		else if (keycode & scl)
-			scale(1.25, 1);
+			scale(1.25);
 		else if (keycode & tran_h)
-			translation_h(10.0, 1);
+			translation_h(10.0);
 		else if (keycode & tran_v)
-			translation_v(10.0, 1);
+			translation_v(10.0);
 	}
 	return (0);
 }
@@ -298,7 +376,7 @@ int my_key_funct(int kc, void *mlx)
 {
 	if (flags && !(flags & mous))
 		flags = 0;
-	else if (kc == 75)
+	if (kc == 75)
 		perspective(0.5);
 	else if (kc == 67)
 		perspective(2);
@@ -317,15 +395,10 @@ int my_key_funct(int kc, void *mlx)
 	return (0);
 }
 
-void translation_h(double shift, int is_recall)
+void translation_h(double shift)
 {
 	int i;
 
-	if (!is_recall)
-	{
-		keys[key_len] = flags;
-		key_len++;
-	}
 	i = 0;
 	while (i < len * max_strs)
 	{
@@ -334,15 +407,10 @@ void translation_h(double shift, int is_recall)
 	}
 }
 
-void translation_v(double shift, int is_recall)
+void translation_v(double shift)
 {
 	int i;
 
-	if (!is_recall)
-	{
-		keys[key_len] = flags;
-		key_len++;
-	}
 	i = 0;
 	while (i < len * max_strs)
 	{
@@ -351,15 +419,10 @@ void translation_v(double shift, int is_recall)
 	}
 }
 
-void scale(double factor, int is_recall)
+void scale(double factor)
 {
 	int i;
 
-	if (!is_recall)
-	{
-		keys[key_len] = flags ;
-		key_len++;
-	}
 	i = 0;
 	double center_x = WIDTH / 2;
 	double center_y = HEIGHT / 2;
@@ -444,7 +507,7 @@ double mean_z()
 	return (sum / (len * max_strs));
 }
 
-void	rotation_y(double dir, int is_recall)
+void	rotation_y(double dir)
 {
 
 	int i;
@@ -455,12 +518,6 @@ void	rotation_y(double dir, int is_recall)
 	double x;
 	double z;
 	double theta;
-
-	if (!is_recall)
-	{
-		keys[key_len] = flags;
-		key_len++;
-	}
 
 	i = 0;
 	while (i < len * max_strs)
@@ -491,7 +548,7 @@ void	rotation_y(double dir, int is_recall)
 	// draw_map();
 }
 
-void	rotation_z(double dir, int is_recall)
+void	rotation_z(double dir)
 {
 	int i;
 	double tmp_x;
@@ -501,12 +558,6 @@ void	rotation_z(double dir, int is_recall)
 	double x;
 	double y;
 	double theta;
-
-	if (!is_recall)
-	{
-		keys[key_len] = flags;
-		key_len++;
-	}
 
 	i = 0;
 	while (i < len * max_strs)
@@ -536,7 +587,7 @@ void	rotation_z(double dir, int is_recall)
 	// draw_map();
 }
 
-void	rotation_x(double dir, int is_recall)
+void	rotation_x(double dir)
 {
 	int i;
 	double tmp_y;
@@ -547,11 +598,7 @@ void	rotation_x(double dir, int is_recall)
 	double y;
 	double theta;
 
-	if (!is_recall)
-	{
-		keys[key_len] = flags;
-		key_len++;
-	}
+	
 
 	i = 0;
 	while (i < len * max_strs)
@@ -647,6 +694,7 @@ void draw_lines_y(int index, int inc)
 	while (i < pnts[end].y)
 	{
 		color = ci + (cf - ci) * (i - pnts[start].y) / dy;
+		//color = color_map[(int)(((c_max - c_pnts[i].z)/ (c_max - c_min)) * 63)];
 		mlx_pixel_put(mlx, win, (j), (i), color);
 		if (p < 0)
 		{
@@ -709,7 +757,7 @@ void draw_legend(void)
 	//mlx_string_put(mlx, win, WIDTH - 200, 25, 16777215, color_theme);
 	// ft_printf("Color Theme: %s", theme_names[col_iter % 7]);
 
-	// mlx_string_put(mlx, win, 30, 25, 16777215 - iter * (7667711) + (iter / 2) * (7667711), "***TRANSFORMATION COMMANDS***");
+	// mlx_string_put(mlx, win, 30, 25, 16777215 - (iter % 10 * (7667711) + (iter / 2) * (7667711), "***TRANSFORMATION COMMANDS***");
 	// mlx_string_put(mlx, win, 30, 50, 16777215 - (iter / 2) * (7667711) + (iter / 3) * (7667711), "Exit  		: 'ESC'");
 	// mlx_string_put(mlx, win, 30, 70, 16777215 - (iter / 3) * (7667711) + (iter / 4) * (7667711), "Reset 		: 'r'");
 	// mlx_string_put(mlx, win, 30, 90, 16777215 - (iter / 4) * (7667711) + (iter / 5) * (7667711), "Scale 		: '-'  '+' (Keypad)");
@@ -725,12 +773,24 @@ void apply_color_map(int *color_map)
 {
 	int i;
 
-	i = 0;
-	while (i < len * max_strs)
+	if (c_max - c_min == 0)
 	{
-		pnts[i].color = color_map[(int)(((c_max - c_pnts[i].z)/ (c_max - c_min)) * 63)];
-		printf("Color Ratio = %f\n", ((c_pnts[i].z - c_min)/ (c_max - c_min)));
-		i++;
+		i = 0;
+		while (i < len * max_strs)
+		{
+			pnts[i].color = 0x00FFFFFF;
+			i++;
+		}
+	}
+	else
+	{
+		i = 0;
+		while (i < len * max_strs)
+		{
+			pnts[i].color = color_map[(int)(((c_max - c_pnts[i].z)/ (c_max - c_min)) * 63)];
+			// printf("Color Ratio = %f\n", ((c_pnts[i].z - c_min)/ (c_max - c_min)));
+			i++;
+		}
 	}
 }
 
@@ -739,20 +799,28 @@ void set_color_map(int get_next_map)
 	static int col_iter = 0;
 
 	col_iter += get_next_map;
-	if (col_iter % 7 == 0)
+	if (col_iter % 11 == 0)
 		apply_color_map(dawn);
-	else if (col_iter % 7 == 1)
+	else if (col_iter % 11 == 1)
 		apply_color_map(dusk);
-	else if (col_iter % 7 == 2)
+	else if (col_iter % 11 == 2)
 		apply_color_map(kryptonite);
-	else if (col_iter % 7 == 3)
+	else if (col_iter % 11 == 3)
 		apply_color_map(red_blue);
-	else if (col_iter % 7 == 4)
+	else if (col_iter % 11 == 4)
 		apply_color_map(fire);
-	else if (col_iter % 7 == 5)
+	else if (col_iter % 11 == 5)
 		apply_color_map(ice);
-	else if (col_iter % 7 == 6)
+	else if (col_iter % 11 == 6)
 		apply_color_map(seashore);
+	else if (col_iter % 11 == 7)
+		apply_color_map(kryptonite_center);
+	else if (col_iter % 11 == 8)
+		apply_color_map(seashore_center);
+	else if (col_iter % 11 == 9)
+		apply_color_map(fire_center);
+	else if (col_iter % 11 == 10)
+		apply_color_map(dawn_center);
 	draw_map();
 }
 
@@ -809,12 +877,12 @@ void reset_map(void)
 		pnts[i].z = c_pnts[i].z;
 		i++;
 	}
-	translation_h((WIDTH / 2) - (len / 2), 0);
-	translation_v((HEIGHT / 2) - (max_strs / 2), 0);
-	scale((WIDTH * 3)/ (len * 5), 0);	
+	translation_h((WIDTH / 2) - (len / 2));
+	translation_v((HEIGHT / 2) - (max_strs / 2));
+	scale((WIDTH * 3)/ (len * 5));	
 }
 
-void get_map(void)
+void get_map(char *file_name)
 {
 	int fd;
 	int j;
@@ -829,7 +897,7 @@ void get_map(void)
 	char *num;
 	
 
-	fd = open(file, O_RDONLY);
+	fd = open(file_name, O_RDONLY);
 	j = 0;
 	while (get_next_line(fd, &str) == 1)
 	{
@@ -892,7 +960,7 @@ void get_map(void)
 			{
 				c_max = pnts[p].z > c_max ? pnts[p].z : c_max;
 				c_min = pnts[p].z < c_min ? pnts[p].z : c_min;
-				printf("Max = %f  Min = %f\n", c_max, c_min);
+				// printf("Max = %f  Min = %f\n", c_max, c_min);
 			}
 			p++;
 			i++;
@@ -901,21 +969,34 @@ void get_map(void)
 	}
 	c_pnts = (t_vec*)malloc(sizeof(t_vec) * len * max_strs);
 	set_copy();
-	translation_h((WIDTH / 2) - (len / 2), 0);
-	translation_v((HEIGHT / 2) - (max_strs / 2), 0);
-	scale((WIDTH * 3)/ (len * 5), 0);
+	translation_h((WIDTH / 2) - (len / 2));
+	translation_v((HEIGHT / 2) - (max_strs / 2));
+	scale((WIDTH * 3)/ (len * 5));
 }
 
+void load_next_map(void)
+{
+	ft_bzero((void *)keys, 1024);
+	key_len = 0;
+	ft_memdel((void **)&pnts);
+	ft_memdel((void **)&c_pnts);
+	file_num++;
+	ft_printf("Before Loading new map\n");
+	get_map(files[file_num % max_files]);
+	mlx_clear_window(mlx, win);
+	set_color_map(0);
+}
 int my_key_pressed(int keycode, void *mlx)
 {
+	ft_printf("My key pressed = %d\n", keycode);
 	if (keycode == 0)
 		flags |= rot_x;
 	else if (keycode == 1)
-		flags |= rot_x | sign;
+		flags |= rot_x_neg | sign;
 	else if (keycode == 2)
 		flags |= rot_y;
 	else if (keycode == 3)
-		flags |= rot_y | sign;
+		flags |= rot_y_neg | sign;
 	else if (keycode == 6)
 		flags |= rot_z;
 	else if (keycode == 7)
@@ -932,59 +1013,50 @@ int my_key_pressed(int keycode, void *mlx)
 		flags |= tran_v;
 	else if (keycode == 126)
 		flags |= tran_v | sign;
+	printf("Flags = %u\n", flags );
 	return (0);
 }
 
 int my_loop_hook(void *mlx)
 {
+	ft_printf("Hook flags = %u\n", flags);
+	if (flags & rot_x_neg)
+		rotation_x(-0.125);
+	if (flags & rot_y_neg)
+		rotation_y(-0.125);
 	if (flags & rot_x)
-	{
-		if (flags & sign)
-			rotation_x(-0.125, 0);
-		else
-			rotation_x(0.125, 0);
-	}
+		rotation_x(0.125);
 	if (flags & rot_y)
+		rotation_y(0.125);
+	if (flags & sign)
 	{
-		if (flags & sign)
-			rotation_y(-0.125, 0);
-		else
-			rotation_y(0.125, 0);
+		if (flags & rot_z)
+			rotation_z(-0.125);
+		else if (flags & scl)
+			scale(0.8);
+		else if (flags & tran_h)
+			translation_h(-10.0);
+		else if (flags & tran_v)
+			translation_v(-10.0);
 	}
-	if (flags & rot_z)
+	else
 	{
-		if (flags & sign)
-			rotation_z(-0.125, 0);
-		else
-			rotation_z(0.125, 0);
-	}
-	if (flags & tran_v)
-	{
-		if (flags & sign)
-			translation_v(-10.0, 0);
-		else
-			translation_v(10.0, 0);
-	}
-	if (flags & tran_h)
-	{
-		if (flags & sign)
-			translation_h(-10.0, 0);
-		else
-			translation_h(10, 0);
-	}
-	if (flags & scl)
-	{
-		if (flags & sign)
-			scale(0.8, 0);
-		else
-			scale(1.25, 0);
+		if (flags & rot_z)
+			rotation_z(0.125);
+		else if (flags & scl)
+			scale(1.25);
+		else if (flags & tran_h)
+			translation_h(10.0);
+		else if (flags & tran_v)
+			translation_v(10.0);
 	}
 	if (flags)
 	{
+		keys[key_len] = flags;
+		key_len++;
 		mlx_clear_window(mlx, win);
 		draw_map();
 	}
-	
 	return (0);
 }
 
@@ -1000,7 +1072,7 @@ int my_mouse_motion(int i , int j , void *mlx)
 
 int my_mouse_released(int button, int i, int j, void *mlx)
 {
-	ft_printf("Release Button = %d  X = %d  Y  = %d\n", button, i, j);	
+	// ft_printf("Release Button = %d  X = %d  Y  = %d\n", button, i, j);	
 	if (flags & mous)
 		flags = 0;
 	return (0);
@@ -1011,9 +1083,9 @@ int my_mouse_function(int button, int i, int j, void *mlx)
 	if ( (j - 590) - (i - 1050) >= -40 && (j - 590) + (i - 1050) >= 40 && (j - 590) <= 40)
 		flags |= rot_x | mous;
 	else if ((j - 650) + (i - 1150) <= 80 && (j - 650) >= (i - 1150) && (i - 1150 >= 0))
-		flags |= rot_y | sign | mous;
+		flags |= rot_y_neg | sign | mous;
 	else if ((j - 750) + (i - 1050) <= 80 && (j - 750) <= (i - 1050) && (j - 750) >= 0)
-		flags |= rot_x | sign | mous;
+		flags |= rot_x_neg | sign | mous;
 	else if ((j - 650) + (i - 990) >= 40 && (j - 650) - (i - 990) <= 40 && (i - 990) <= 40)
 		flags |= rot_y | mous;
 	else if (button == 5  && iter < 10)
@@ -1030,6 +1102,10 @@ int my_mouse_function(int button, int i, int j, void *mlx)
 		(j - 590) - (i - 1050) >= -40 && (j - 590) + (i - 1050) >= 40 && 
 		(j - 750) + (i - 1050) <= 80 && (j - 750) <= (i - 1050))
 		set_color_map(1);
+	else if (button == 2 && j >= 590 && j <= 750 && i <= 1150 && i >= 990 && 
+		(j - 590) - (i - 1050) >= -40 && (j - 590) + (i - 1050) >= 40 && 
+		(j - 750) + (i - 1050) <= 80 && (j - 750) <= (i - 1050))
+		load_next_map();
 	return (0);
 }
 
@@ -1040,12 +1116,26 @@ int main(int argc, char **argv)
 	win = mlx_new_window(mlx, WIDTH, HEIGHT, "mlx_42");
 	mlx_do_key_autorepeatoff(mlx);
 	init_colors();
-	keys = (unsigned char *)ft_strnew(1024);
+	keys = (unsigned int *)malloc(sizeof(unsigned int) * 1024);
 	if (argc >= 2)
 	{
 		// ft_printf("Calling draw map\n");
-		file = argv[1];
-		get_map();
+		int i = 1;
+		while (argv[i])
+		{
+			max_files++;
+			i++;
+		}
+		ft_printf("Max files = %d\n", max_files);
+		files = (char **)malloc(sizeof(char*) * max_files);
+		i = 1;
+		while (argv[i])
+		{
+			files[i - 1] = ft_strdup(argv[i]);
+			i++;
+		}
+		// file = argv[1];
+		get_map(files[file_num]);
 		set_color_map(0);
 	}
 	//mlx_put_image_to_window(mlx, win, img, 0, 0);
