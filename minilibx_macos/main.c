@@ -16,6 +16,16 @@
 #include <math.h>
 #define WIDTH 1200
 #define HEIGHT 800
+#define TRAN_H 0x01
+#define TRAN_V  0x02
+#define SCL  0x04
+#define ROT_X  0x08
+#define ROT_Y  0x10
+#define ROT_Z  0x20
+#define MOUS  0x40
+#define SIGN  0x80
+#define ROT_X_NEG  0x100
+#define ROT_Y_NEG  0x200
 void *win;
 void *mlx;
 
@@ -39,16 +49,16 @@ unsigned int *keys;
 double per = 1;
 //int col_iter = 0;
 
-const unsigned int tran_h = 0x01;
-const unsigned int tran_v = 0x02;
-const unsigned int scl = 0x04;
-const unsigned int rot_x = 0x08;
-const unsigned int rot_y = 0x10;
-const unsigned int rot_z = 0x20;
-const unsigned int mous = 0x40;
-const unsigned int sign = 0x80;
-const unsigned int rot_x_neg = 0x100;
-const unsigned int rot_y_neg = 0x200;
+// const unSIGNed int TRAN_H = 0x01;
+// const unSIGNed int TRAN_V = 0x02;
+// const unSIGNed int SCL = 0x04;
+// const unSIGNed int ROT_X = 0x08;
+// const unSIGNed int ROT_Y_NEG = 0x10;
+// const unSIGNed int ROT_Z = 0x20;
+// const unSIGNed int MOUS = 0x40;
+// const unSIGNed int SIGN = 0x80;
+// const unSIGNed int ROT_X_NEG = 0x100;
+// const unSIGNed int ROT_Y_NEG_neg = 0x200;
 unsigned int flags = 0;
 
 typedef struct s_vec
@@ -339,34 +349,34 @@ int my_key_recall(unsigned int keycode, void *mlx)
 {
 	printf("key event %d\n", keycode);
 	
-	if (keycode & rot_x_neg)
+	if (keycode & ROT_X_NEG)
 		rotation_x(-0.125);
-	if (keycode & rot_y_neg)
+	if (keycode & ROT_Y_NEG)
 		rotation_y(-0.125);
-	if (keycode & rot_x)
+	if (keycode & ROT_X)
 		rotation_x(0.125);
-	if (keycode & rot_y)
+	if (keycode & ROT_Y)
 		rotation_y(0.125);
-	if (keycode & sign)
+	if (keycode & SIGN)
 	{
-		if (keycode & rot_z)
+		if (keycode & ROT_Z)
 			rotation_z(-0.125);
-		else if (keycode & scl)
+		else if (keycode & SCL)
 			scale(0.8);
-		else if (keycode & tran_h)
+		else if (keycode & TRAN_H)
 			translation_h(-10.0);
-		else if (keycode & tran_v)
+		else if (keycode & TRAN_V)
 			translation_v(-10.0);
 	}
 	else
 	{
-		if (keycode & rot_z)
+		if (keycode & ROT_Z)
 			rotation_z(0.125);
-		else if (keycode & scl)
+		else if (keycode & SCL)
 			scale(1.25);
-		else if (keycode & tran_h)
+		else if (keycode & TRAN_H)
 			translation_h(10.0);
-		else if (keycode & tran_v)
+		else if (keycode & TRAN_V)
 			translation_v(10.0);
 	}
 	return (0);
@@ -374,7 +384,8 @@ int my_key_recall(unsigned int keycode, void *mlx)
 
 int my_key_funct(int kc, void *mlx)
 {
-	if (flags && !(flags & mous))
+	ft_printf("Key Function Key = %d\n", kc);
+	if (flags && !(flags & MOUS))
 		flags = 0;
 	if (kc == 75)
 		perspective(0.5);
@@ -534,9 +545,9 @@ void	rotation_y(double dir)
 	// int i;
 	// double tmp_x;
 
-	// rot_y += dir;
+	// ROT_Y_NEG += dir;
 	// i = 0;
-	// printf("rot_y dir = %f", dir);
+	// printf("ROT_Y_NEG dir = %f", dir);
 	// while (i < len * max_strs)
 	// {
 	// 	tmp_x = pnts[i].x * cos(dir * M_PI / 16) + pnts[i].z * (dir) * sin(M_PI / 16);
@@ -574,7 +585,7 @@ void	rotation_z(double dir)
 	// int i;
 	// double tmp_x;
 
-	// rot_z += dir;
+	// ROT_Z += dir;
 	// i = 0;
 	// while (i < len * max_strs)
 	// {
@@ -615,7 +626,7 @@ void	rotation_x(double dir)
 	// int i;
 	// double tmp_y;
 
-	// rot_x += dir;
+	// ROT_X += dir;
 	// i = 0;
 	// while (i < len * max_strs)
 	// {
@@ -990,29 +1001,29 @@ int my_key_pressed(int keycode, void *mlx)
 {
 	ft_printf("My key pressed = %d\n", keycode);
 	if (keycode == 0)
-		flags |= rot_x;
+		flags |= ROT_X;
 	else if (keycode == 1)
-		flags |= rot_x_neg | sign;
+		flags |= ROT_X_NEG;
 	else if (keycode == 2)
-		flags |= rot_y;
+		flags |= ROT_Y_NEG;
 	else if (keycode == 3)
-		flags |= rot_y_neg | sign;
+		flags |= ROT_Y;
 	else if (keycode == 6)
-		flags |= rot_z;
+		flags |= ROT_Z;
 	else if (keycode == 7)
-		flags |= rot_z | sign;
+		flags |= ROT_Z | SIGN;
 	else if (keycode == 24)
-		flags |= scl;
+		flags |= SCL;
 	else if (keycode == 27)
-		flags |= scl | sign;
+		flags |= SCL | SIGN;
 	else if (keycode == 123)
-		flags |= tran_h;
+		flags |= TRAN_H;
 	else if (keycode == 124)
-		flags |= tran_h | sign;
+		flags |= TRAN_H | SIGN;
 	else if (keycode == 125)
-		flags |= tran_v;
+		flags |= TRAN_V;
 	else if (keycode == 126)
-		flags |= tran_v | sign;
+		flags |= TRAN_V | SIGN;
 	printf("Flags = %u\n", flags );
 	return (0);
 }
@@ -1020,34 +1031,34 @@ int my_key_pressed(int keycode, void *mlx)
 int my_loop_hook(void *mlx)
 {
 	ft_printf("Hook flags = %u\n", flags);
-	if (flags & rot_x_neg)
+	if (flags & ROT_X_NEG)
 		rotation_x(-0.125);
-	if (flags & rot_y_neg)
+	if (flags & ROT_Y_NEG)
 		rotation_y(-0.125);
-	if (flags & rot_x)
+	if (flags & ROT_X)
 		rotation_x(0.125);
-	if (flags & rot_y)
+	if (flags & ROT_Y)
 		rotation_y(0.125);
-	if (flags & sign)
+	if (flags & SIGN)
 	{
-		if (flags & rot_z)
+		if (flags & ROT_Z)
 			rotation_z(-0.125);
-		else if (flags & scl)
+		else if (flags & SCL)
 			scale(0.8);
-		else if (flags & tran_h)
+		else if (flags & TRAN_H)
 			translation_h(-10.0);
-		else if (flags & tran_v)
+		else if (flags & TRAN_V)
 			translation_v(-10.0);
 	}
 	else
 	{
-		if (flags & rot_z)
+		if (flags & ROT_Z)
 			rotation_z(0.125);
-		else if (flags & scl)
+		else if (flags & SCL)
 			scale(1.25);
-		else if (flags & tran_h)
+		else if (flags & TRAN_H)
 			translation_h(10.0);
-		else if (flags & tran_v)
+		else if (flags & TRAN_V)
 			translation_v(10.0);
 	}
 	if (flags)
@@ -1063,7 +1074,7 @@ int my_loop_hook(void *mlx)
 int my_mouse_motion(int i , int j , void *mlx)
 {
 	//ft_printf("Motion Button = %d X = %d Y = %d\n", button, i, j);
-	if (flags & mous && !((j - 590) - (i - 1050) >= -40 
+	if (flags & MOUS && !((j - 590) - (i - 1050) >= -40 
 		&& (j - 590) + (i - 1050) >= 40 && 
 		(j - 750) + (i - 1050) <= 80 && (j - 750) <= (i - 1050)))
 		flags = 0;
@@ -1073,7 +1084,7 @@ int my_mouse_motion(int i , int j , void *mlx)
 int my_mouse_released(int button, int i, int j, void *mlx)
 {
 	// ft_printf("Release Button = %d  X = %d  Y  = %d\n", button, i, j);	
-	if (flags & mous)
+	if (flags & MOUS)
 		flags = 0;
 	return (0);
 }
@@ -1081,13 +1092,13 @@ int my_mouse_function(int button, int i, int j, void *mlx)
 {
 	ft_printf("Button = %d  X = %d  Y  = %d\n", button, i, j);
 	if ( (j - 590) - (i - 1050) >= -40 && (j - 590) + (i - 1050) >= 40 && (j - 590) <= 40)
-		flags |= rot_x | mous;
+		flags |= ROT_X | MOUS;
 	else if ((j - 650) + (i - 1150) <= 80 && (j - 650) >= (i - 1150) && (i - 1150 >= 0))
-		flags |= rot_y_neg | sign | mous;
+		flags |= ROT_Y_NEG | MOUS;
 	else if ((j - 750) + (i - 1050) <= 80 && (j - 750) <= (i - 1050) && (j - 750) >= 0)
-		flags |= rot_x_neg | sign | mous;
+		flags |= ROT_X_NEG | MOUS;
 	else if ((j - 650) + (i - 990) >= 40 && (j - 650) - (i - 990) <= 40 && (i - 990) <= 40)
-		flags |= rot_y | mous;
+		flags |= ROT_Y | MOUS;
 	else if (button == 5  && iter < 10)
 	{
 		iter++;
